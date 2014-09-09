@@ -18,7 +18,7 @@ import android.widget.*;
 import com.adgvcxz.path.R;
 
 /**
- * Created by scyoule on 14-9-5.
+ * Created by adgvcxz on 14-9-5.
  */
 public class PathGroup extends RelativeLayout {
 
