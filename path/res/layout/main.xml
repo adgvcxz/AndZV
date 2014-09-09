@@ -1,13 +1,39 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
-              android:orientation="vertical"
-              android:layout_width="fill_parent"
-              android:layout_height="fill_parent"
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+             xmlns:path="http://schemas.android.com/apk/res/com.adgvcxz.path"
+             android:orientation="vertical"
+             android:layout_width="fill_parent"
+             android:layout_height="fill_parent"
         >
-    <TextView
-            android:layout_width="fill_parent"
-            android:layout_height="wrap_content"
-            android:text="Hello World, MyActivity"
-            />
-</LinearLayout>
+    <ListView
+            android:id="@+id/list"
+            android:layout_width="match_parent" android:layout_height="match_parent"></ListView>
+    <com.adgvcxz.path.view.PathGroup
+            android:id="@+id/path_group"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            path:numColumns="3"
+            >
+        <GridView
+                android:id="@+id/gridView"
+                android:layout_width="match_parent" android:layout_height="wrap_content"
+                  android:layout_centerHorizontal="true"
+                  android:layout_centerVertical="true"
+                  android:visibility="gone"
+                android:stretchMode="columnWidth">
+        </GridView>
+        <Button
+                android:id="@+id/path_btn"
+                android:layout_width="wrap_content" android:layout_height="wrap_content"
+                android:layout_alignParentBottom="true"
+                android:layout_alignParentRight="true"
+                android:layout_marginRight="40dp"
+                android:layout_marginBottom="40dp"
+                android:text="+"
+                android:gravity="center"
+                android:textSize="24sp"
+                android:background="@android:color/transparent"
+                />
+    </com.adgvcxz.path.view.PathGroup>
+</FrameLayout>
 
