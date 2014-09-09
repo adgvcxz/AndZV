@@ -13,6 +13,8 @@
             android:layout_width="match_parent"
             android:layout_height="match_parent"
             path:numColumns="3"
+            path:btnBottomMargin="40dp"
+            path:btnRightMargin="40dp"
             >
     </com.adgvcxz.path.view.PathGroup>
 </FrameLayout>

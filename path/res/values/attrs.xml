@@ -2,5 +2,7 @@
 <resources>
     <declare-styleable name="PathGroup">
         <attr name="numColumns" format="integer"/>
+        <attr name="btnRightMargin" format="dimension"/>
+        <attr name="btnBottomMargin" format="dimension"/>
     </declare-styleable>
 </resources>

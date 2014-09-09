@@ -24,9 +24,11 @@ public class PathGroup extends RelativeLayout {
 
     public static final int SHOW = 0;
 
-    public static final int ANIM = 1;
+    public static final int SHOW_ANIM = 1;
 
-    public static final int HIDE = 2;
+    public static final int HIDE_ANIM = 2;
+
+    public static final int HIDE = 3;
 
     public static final int HIDE_COLOR_RED      = 0x9A;
     public static final int HIDE_COLOR_GREEN    = 0xFF;
@@ -38,13 +40,13 @@ public class PathGroup extends RelativeLayout {
 
     private int mMaxRadius;
 
-    private Button mPathBtn;
+    private ImageView mPathBtn;
 
     private int mCenterX, mCenterY;
 
     private Paint mPaint;
 
-    private Animation mRotateAnim;
+    private Animation mRotateAnimShow, mRotateAnimHide;
 
     private Animation mScaleAnimShow;
 
@@ -60,29 +62,73 @@ public class PathGroup extends RelativeLayout {
 
     private int mNumber;
 
-    private float mRed, mGreen, mBlue;
-
-    private float mRedPer, mGreenPer, mBluePer;
+    private int mRightMargin, mBottomMargin;
 
     private OnItemClickListener mListener;
 
     public PathGroup(Context context) {
         super(context);
-        mNumber = 3;
-        initView();
         init();
+        initView();
     }
 
     public PathGroup(Context context, AttributeSet attrs) {
         super(context, attrs);
+        init();
         TypedArray array = context.obtainStyledAttributes(attrs, R.styleable.PathGroup);
         mNumber = array.getInteger(R.styleable.PathGroup_numColumns, 3);
+        mBottomMargin = array.getDimensionPixelSize(R.styleable.PathGroup_btnBottomMargin, mNumber);
+        mRightMargin = array.getDimensionPixelSize(R.styleable.PathGroup_btnRightMargin, mBottomMargin);
         initView();
-        init();
     }
 
     private void init() {
         mStatus = HIDE;
+        float density = getResources().getDisplayMetrics().density;
+        mNumber = 3;
+        mBottomMargin = (int) (40 * density);
+        mRightMargin = (int) (40 * density);
+    }
+
+    private void initView() {
+        mGridView = new GridView(getContext());
+        mGridView.setNumColumns(mNumber);
+        mGridView.setGravity(Gravity.CENTER);
+        mGridView.setVisibility(View.GONE);
+        mGridView.setStretchMode(GridView.STRETCH_COLUMN_WIDTH);
+        LayoutParams gridViewLP = new LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.WRAP_CONTENT);
+        gridViewLP.addRule(RelativeLayout.CENTER_IN_PARENT);
+        addView(mGridView, gridViewLP);
+        mPathBtn = new ImageView(getContext());
+        mPathBtn.setBackgroundResource(R.drawable.plus);
+        LayoutParams btnLp = new LayoutParams(LayoutParams.WRAP_CONTENT, LayoutParams.WRAP_CONTENT);
+        btnLp.addRule(RelativeLayout.ALIGN_PARENT_BOTTOM);
+        btnLp.addRule(RelativeLayout.ALIGN_PARENT_RIGHT);
+        btnLp.bottomMargin = mBottomMargin;
+        btnLp.rightMargin = mRightMargin;
+        addView(mPathBtn, btnLp);
+        mGridView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
+            @Override
+            public void onItemClick(AdapterView<?> adapterView, View view, int i, long l) {
+                if (mListener != null) {
+                    mListener.onItemClick(i);
+                }
+            }
+        });
+        mPathBtn.setOnClickListener(new OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                if (mStatus == HIDE) {
+                    mStatus = SHOW_ANIM;
+                    mPathBtn.startAnimation(mRotateAnimShow);
+                    startViewGroupAnimOpen();
+                } else if (mStatus == SHOW) {
+                    mStatus = HIDE_ANIM;
+                    mPathBtn.startAnimation(mRotateAnimHide);
+                    stopViewGroupAnimClose();
+                }
+            }
+        });
         getViewTreeObserver().addOnGlobalLayoutListener(new ViewTreeObserver.OnGlobalLayoutListener() {
             @Override
             public void onGlobalLayout() {
@@ -95,12 +141,9 @@ public class PathGroup extends RelativeLayout {
         });
         setWillNotDraw(false);
         mPaint = new Paint();
-        mPaint.setStyle(Paint.Style.FILL);
-        mRed = HIDE_COLOR_RED;
-        mGreen = HIDE_COLOR_GREEN;
-        mBlue = HIDE_COLOR_BLUE;
-        mPaint.setColor(Color.argb(0x99, (int) mRed, (int) mGreen, (int) mBlue));
-        mRotateAnim = AnimationUtils.loadAnimation(getContext(), R.anim.rotate);
+        mPaint.setColor(Color.argb(0x99, HIDE_COLOR_RED, HIDE_COLOR_GREEN, HIDE_COLOR_BLUE));
+        mRotateAnimShow = AnimationUtils.loadAnimation(getContext(), R.anim.rotate_show);
+        mRotateAnimHide = AnimationUtils.loadAnimation(getContext(), R.anim.rotate_hide);
         mScaleAnimShow = AnimationUtils.loadAnimation(getContext(), R.anim.scale_show);
         mScaleAnimHide = AnimationUtils.loadAnimation(getContext(), R.anim.scale_hide);
         mScaleAnimHide.setAnimationListener(new Animation.AnimationListener() {
@@ -121,46 +164,6 @@ public class PathGroup extends RelativeLayout {
         });
     }
 
-    private void initView() {
-        mGridView = new GridView(getContext());
-        mGridView.setNumColumns(mNumber);
-        mGridView.setGravity(Gravity.CENTER);
-        mGridView.setVisibility(View.GONE);
-        mGridView.setStretchMode(GridView.STRETCH_COLUMN_WIDTH);
-        LayoutParams gridViewLP = new LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.WRAP_CONTENT);
-        gridViewLP.addRule(RelativeLayout.CENTER_IN_PARENT);
-        addView(mGridView, gridViewLP);
-        mPathBtn = new Button(getContext());
-        mPathBtn.setBackgroundColor(Color.TRANSPARENT);
-        mPathBtn.setText("+");
-        LayoutParams btnLp = new LayoutParams(LayoutParams.WRAP_CONTENT, LayoutParams.WRAP_CONTENT);
-        btnLp.addRule(RelativeLayout.ALIGN_PARENT_BOTTOM);
-        btnLp.addRule(RelativeLayout.ALIGN_PARENT_RIGHT);
-        float density = getResources().getDisplayMetrics().density;
-        btnLp.bottomMargin = (int) (40 * density);
-        btnLp.rightMargin = (int) (40 * density);
-        addView(mPathBtn, btnLp);
-        mGridView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
-            @Override
-            public void onItemClick(AdapterView<?> adapterView, View view, int i, long l) {
-                if (mListener != null) {
-                    mListener.onItemClick(i);
-                }
-            }
-        });
-        mPathBtn.setOnClickListener(new OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                mPathBtn.startAnimation(mRotateAnim);
-                if (mStatus == HIDE) {
-                    startViewGroupAnimOpen();
-                } else if (mStatus == SHOW){
-                    stopViewGroupAnimClose();
-                }
-            }
-        });
-    }
-
     @Override
     protected void onDraw(Canvas canvas) {
         super.onDraw(canvas);
@@ -169,9 +172,6 @@ public class PathGroup extends RelativeLayout {
 
     private void startViewGroupAnimOpen() {
         mPerRadius = mMaxRadius / 50;
-        mRedPer = (SHOW_COLOR_RED - HIDE_COLOR_RED) / 60;
-        mGreenPer = (SHOW_COLOR_GREEN - HIDE_COLOR_GREEN) / 60;
-        mBluePer = (SHOW_COLOR_BLUE - HIDE_COLOR_BLUE) / 60;
         mGridView.setVisibility(View.VISIBLE);
         LayoutAnimationController controller = new LayoutAnimationController(mScaleAnimShow, 0.2f);
         controller.setOrder(LayoutAnimationController.ORDER_REVERSE);
@@ -185,9 +185,6 @@ public class PathGroup extends RelativeLayout {
 
     private void stopViewGroupAnimClose() {
         mPerRadius = -mMaxRadius / 50;
-        mRedPer = (HIDE_COLOR_RED - SHOW_COLOR_RED) / (float) 60;
-        mGreenPer = (HIDE_COLOR_GREEN - SHOW_COLOR_GREEN) / (float) 60;
-        mBluePer = (HIDE_COLOR_BLUE - SHOW_COLOR_BLUE) / (float) 60;
         int count = mGridView.getChildCount();
         for (int i = 0; i < count; i++) {
             View view = mGridView.getChildAt(i);
@@ -213,13 +210,15 @@ public class PathGroup extends RelativeLayout {
         @Override
         public void run() {
             super.run();
-            mStatus = ANIM;
             for (int i = 0; i < 60; i++) {
                 mCurrentRadius += mPerRadius;
-                mRed += mRedPer;
-                mGreen += mGreenPer;
-                mBlue += mBluePer;
-                mPaint.setColor(Color.argb(0x99, (int) mRed, (int) mGreen, (int) mBlue));
+                if (i == 30) {
+                    if (mStatus == HIDE_ANIM) {
+                        mPaint.setColor(Color.argb(0x99, HIDE_COLOR_RED, HIDE_COLOR_GREEN, HIDE_COLOR_BLUE));
+                    } else if (mStatus == SHOW_ANIM) {
+                        mPaint.setColor(Color.argb(0x99, SHOW_COLOR_RED, SHOW_COLOR_GREEN, SHOW_COLOR_BLUE));
+                    }
+                }
                 mHandler.sendEmptyMessage(0);
                 try {
                     Thread.sleep(2);
@@ -229,14 +228,10 @@ public class PathGroup extends RelativeLayout {
             }
             if (mPerRadius > 0) {
                 mStatus = SHOW;
-                mRed = SHOW_COLOR_RED;
-                mGreen = SHOW_COLOR_GREEN;
-                mBlue = SHOW_COLOR_BLUE;
+                mPaint.setColor(Color.argb(0x99, SHOW_COLOR_RED, SHOW_COLOR_GREEN, SHOW_COLOR_BLUE));
             } else {
                 mStatus = HIDE;
-                mRed = HIDE_COLOR_RED;
-                mGreen = HIDE_COLOR_GREEN;
-                mBlue = HIDE_COLOR_BLUE;
+                mPaint.setColor(Color.argb(0x99, HIDE_COLOR_RED, HIDE_COLOR_GREEN, HIDE_COLOR_BLUE));
             }
             mHandler.sendEmptyMessage(0);
         }
