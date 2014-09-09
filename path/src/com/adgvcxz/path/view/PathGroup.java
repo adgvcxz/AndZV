@@ -8,6 +8,7 @@ import android.graphics.Paint;
 import android.os.Handler;
 import android.os.Message;
 import android.util.AttributeSet;
+import android.view.Gravity;
 import android.view.View;
 import android.view.ViewTreeObserver;
 import android.view.animation.Animation;
@@ -45,9 +46,9 @@ public class PathGroup extends RelativeLayout {
 
     private Animation mRotateAnim;
 
-    private Animation mScaleAnim;
+    private Animation mScaleAnimShow;
 
-    private Animation mScaleAnim1;
+    private Animation mScaleAnimHide;
 
     private int mCurrentRadius;
 
@@ -68,14 +69,16 @@ public class PathGroup extends RelativeLayout {
     public PathGroup(Context context) {
         super(context);
         mNumber = 3;
+        initView();
         init();
     }
 
     public PathGroup(Context context, AttributeSet attrs) {
         super(context, attrs);
         TypedArray array = context.obtainStyledAttributes(attrs, R.styleable.PathGroup);
-        init();
         mNumber = array.getInteger(R.styleable.PathGroup_numColumns, 3);
+        initView();
+        init();
     }
 
     private void init() {
@@ -98,9 +101,9 @@ public class PathGroup extends RelativeLayout {
         mBlue = HIDE_COLOR_BLUE;
         mPaint.setColor(Color.argb(0x99, (int) mRed, (int) mGreen, (int) mBlue));
         mRotateAnim = AnimationUtils.loadAnimation(getContext(), R.anim.rotate);
-        mScaleAnim = AnimationUtils.loadAnimation(getContext(), R.anim.scale_show);
-        mScaleAnim1 = AnimationUtils.loadAnimation(getContext(), R.anim.scale_hide);
-        mScaleAnim1.setAnimationListener(new Animation.AnimationListener() {
+        mScaleAnimShow = AnimationUtils.loadAnimation(getContext(), R.anim.scale_show);
+        mScaleAnimHide = AnimationUtils.loadAnimation(getContext(), R.anim.scale_hide);
+        mScaleAnimHide.setAnimationListener(new Animation.AnimationListener() {
             @Override
             public void onAnimationStart(Animation animation) {
 
@@ -118,11 +121,25 @@ public class PathGroup extends RelativeLayout {
         });
     }
 
-    @Override
-    protected void onFinishInflate() {
-        super.onFinishInflate();
-        mGridView = (GridView) findViewById(R.id.gridView);
+    private void initView() {
+        mGridView = new GridView(getContext());
         mGridView.setNumColumns(mNumber);
+        mGridView.setGravity(Gravity.CENTER);
+        mGridView.setVisibility(View.GONE);
+        mGridView.setStretchMode(GridView.STRETCH_COLUMN_WIDTH);
+        LayoutParams gridViewLP = new LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.WRAP_CONTENT);
+        gridViewLP.addRule(RelativeLayout.CENTER_IN_PARENT);
+        addView(mGridView, gridViewLP);
+        mPathBtn = new Button(getContext());
+        mPathBtn.setBackgroundColor(Color.TRANSPARENT);
+        mPathBtn.setText("+");
+        LayoutParams btnLp = new LayoutParams(LayoutParams.WRAP_CONTENT, LayoutParams.WRAP_CONTENT);
+        btnLp.addRule(RelativeLayout.ALIGN_PARENT_BOTTOM);
+        btnLp.addRule(RelativeLayout.ALIGN_PARENT_RIGHT);
+        float density = getResources().getDisplayMetrics().density;
+        btnLp.bottomMargin = (int) (40 * density);
+        btnLp.rightMargin = (int) (40 * density);
+        addView(mPathBtn, btnLp);
         mGridView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
             @Override
             public void onItemClick(AdapterView<?> adapterView, View view, int i, long l) {
@@ -131,7 +148,6 @@ public class PathGroup extends RelativeLayout {
                 }
             }
         });
-        mPathBtn = (Button) findViewById(R.id.path_btn);
         mPathBtn.setOnClickListener(new OnClickListener() {
             @Override
             public void onClick(View view) {
@@ -157,7 +173,7 @@ public class PathGroup extends RelativeLayout {
         mGreenPer = (SHOW_COLOR_GREEN - HIDE_COLOR_GREEN) / 60;
         mBluePer = (SHOW_COLOR_BLUE - HIDE_COLOR_BLUE) / 60;
         mGridView.setVisibility(View.VISIBLE);
-        LayoutAnimationController controller = new LayoutAnimationController(mScaleAnim, 0.2f);
+        LayoutAnimationController controller = new LayoutAnimationController(mScaleAnimShow, 0.2f);
         controller.setOrder(LayoutAnimationController.ORDER_REVERSE);
         mGridView.setLayoutAnimation(controller);
         new AnimThread().start();
@@ -175,7 +191,7 @@ public class PathGroup extends RelativeLayout {
         int count = mGridView.getChildCount();
         for (int i = 0; i < count; i++) {
             View view = mGridView.getChildAt(i);
-            view.startAnimation(mScaleAnim1);
+            view.startAnimation(mScaleAnimHide);
         }
         new AnimThread().start();
     }
