@@ -30,13 +30,9 @@ public class PathGroup extends RelativeLayout {
 
     public static final int HIDE = 3;
 
-    public static final int HIDE_COLOR_RED      = 0x9A;
-    public static final int HIDE_COLOR_GREEN    = 0xFF;
-    public static final int HIDE_COLOR_BLUE     = 0x9A;
+    private int mShowColor;
 
-    public static final int SHOW_COLOR_RED      = 0xFF;
-    public static final int SHOW_COLOR_GREEN    = 0x82;
-    public static final int SHOW_COLOR_BLUE     = 0x47;
+    private int mHideColor;
 
     private int mMaxRadius;
 
@@ -79,6 +75,8 @@ public class PathGroup extends RelativeLayout {
         mNumber = array.getInteger(R.styleable.PathGroup_numColumns, 3);
         mBottomMargin = array.getDimensionPixelSize(R.styleable.PathGroup_btnBottomMargin, mNumber);
         mRightMargin = array.getDimensionPixelSize(R.styleable.PathGroup_btnRightMargin, mBottomMargin);
+        mShowColor = array.getColor(R.styleable.PathGroup_showColor, mShowColor);
+        mHideColor = array.getColor(R.styleable.PathGroup_hideColor, mHideColor);
         initView();
     }
 
@@ -88,6 +86,8 @@ public class PathGroup extends RelativeLayout {
         mNumber = 3;
         mBottomMargin = (int) (40 * density);
         mRightMargin = (int) (40 * density);
+        mShowColor = Color.parseColor("#99FF8247");
+        mHideColor = Color.parseColor("#999AFF9A");
     }
 
     private void initView() {
@@ -141,7 +141,7 @@ public class PathGroup extends RelativeLayout {
         });
         setWillNotDraw(false);
         mPaint = new Paint();
-        mPaint.setColor(Color.argb(0x99, HIDE_COLOR_RED, HIDE_COLOR_GREEN, HIDE_COLOR_BLUE));
+        mPaint.setColor(mHideColor);
         mRotateAnimShow = AnimationUtils.loadAnimation(getContext(), R.anim.rotate_show);
         mRotateAnimHide = AnimationUtils.loadAnimation(getContext(), R.anim.rotate_hide);
         mScaleAnimShow = AnimationUtils.loadAnimation(getContext(), R.anim.scale_show);
@@ -214,9 +214,9 @@ public class PathGroup extends RelativeLayout {
                 mCurrentRadius += mPerRadius;
                 if (i == 30) {
                     if (mStatus == HIDE_ANIM) {
-                        mPaint.setColor(Color.argb(0x99, HIDE_COLOR_RED, HIDE_COLOR_GREEN, HIDE_COLOR_BLUE));
+                        mPaint.setColor(mHideColor);
                     } else if (mStatus == SHOW_ANIM) {
-                        mPaint.setColor(Color.argb(0x99, SHOW_COLOR_RED, SHOW_COLOR_GREEN, SHOW_COLOR_BLUE));
+                        mPaint.setColor(mShowColor);
                     }
                 }
                 mHandler.sendEmptyMessage(0);
@@ -228,10 +228,10 @@ public class PathGroup extends RelativeLayout {
             }
             if (mPerRadius > 0) {
                 mStatus = SHOW;
-                mPaint.setColor(Color.argb(0x99, SHOW_COLOR_RED, SHOW_COLOR_GREEN, SHOW_COLOR_BLUE));
+                mPaint.setColor(mShowColor);
             } else {
                 mStatus = HIDE;
-                mPaint.setColor(Color.argb(0x99, HIDE_COLOR_RED, HIDE_COLOR_GREEN, HIDE_COLOR_BLUE));
+                mPaint.setColor(mHideColor);
             }
             mHandler.sendEmptyMessage(0);
         }
