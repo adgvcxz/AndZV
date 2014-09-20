@@ -6,5 +6,7 @@
         <attr name="btnBottomMargin" format="dimension"/>
         <attr name="showColor" format="color"/>
         <attr name="hideColor" format="color"/>
+        <attr name="canMove" format="boolean"/>
+        <attr name="dragColor" format="color"/>
     </declare-styleable>
 </resources>

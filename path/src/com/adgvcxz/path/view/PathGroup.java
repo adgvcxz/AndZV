@@ -7,6 +7,7 @@ import android.graphics.Color;
 import android.graphics.Paint;
 import android.os.Handler;
 import android.os.Message;
+import android.os.Vibrator;
 import android.util.AttributeSet;
 import android.view.Gravity;
 import android.view.MotionEvent;
@@ -34,6 +35,8 @@ public class PathGroup extends RelativeLayout {
     private int mShowColor;
 
     private int mHideColor;
+
+    private int mDragColor;
 
     private int mMaxRadius;
 
@@ -65,6 +68,8 @@ public class PathGroup extends RelativeLayout {
 
     private boolean mIsLongClick;
 
+    private boolean mIsCanDrag;
+
     public PathGroup(Context context) {
         super(context);
         init();
@@ -80,6 +85,8 @@ public class PathGroup extends RelativeLayout {
         mRightMargin = array.getDimensionPixelSize(R.styleable.PathGroup_btnRightMargin, mBottomMargin);
         mShowColor = array.getColor(R.styleable.PathGroup_showColor, mShowColor);
         mHideColor = array.getColor(R.styleable.PathGroup_hideColor, mHideColor);
+        mIsCanDrag = array.getBoolean(R.styleable.PathGroup_canMove, mIsCanDrag);
+        mDragColor = array.getColor(R.styleable.PathGroup_dragColor, mDragColor);
         initView();
     }
 
@@ -91,6 +98,8 @@ public class PathGroup extends RelativeLayout {
         mRightMargin = (int) (40 * density);
         mShowColor = Color.parseColor("#99FF8247");
         mHideColor = Color.parseColor("#999AFF9A");
+        mDragColor = Color.parseColor("#990080FF");
+        mIsCanDrag = true;
     }
 
     private void initView() {
@@ -177,7 +186,12 @@ public class PathGroup extends RelativeLayout {
         mPathBtn.setOnLongClickListener(new OnLongClickListener() {
             @Override
             public boolean onLongClick(View v) {
-                mIsLongClick = true;
+                if (mIsCanDrag && mStatus == HIDE) {
+                    mIsLongClick = true;
+                    Vibrator vib = (Vibrator) getContext().getSystemService(Context.VIBRATOR_SERVICE);
+                    vib.vibrate(100);
+                    mPaint.setColor(mDragColor);
+                }
                 return false;
             }
         });
@@ -224,7 +238,9 @@ public class PathGroup extends RelativeLayout {
                 break;
             case MotionEvent.ACTION_UP:
                 if (mIsLongClick) {
+                    mPaint.setColor(mHideColor);
                     calculateMaxRadius();
+                    invalidate();
                 }
                 break;
         }
