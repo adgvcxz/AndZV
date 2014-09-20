@@ -9,6 +9,7 @@ import android.os.Handler;
 import android.os.Message;
 import android.util.AttributeSet;
 import android.view.Gravity;
+import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewTreeObserver;
 import android.view.animation.Animation;
@@ -61,6 +62,8 @@ public class PathGroup extends RelativeLayout {
     private int mRightMargin, mBottomMargin;
 
     private OnItemClickListener mListener;
+
+    private boolean mIsLongClick;
 
     public PathGroup(Context context) {
         super(context);
@@ -115,28 +118,14 @@ public class PathGroup extends RelativeLayout {
                 }
             }
         });
-        mPathBtn.setOnClickListener(new OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                if (mStatus == HIDE) {
-                    mStatus = SHOW_ANIM;
-                    mPathBtn.startAnimation(mRotateAnimShow);
-                    startViewGroupAnimOpen();
-                } else if (mStatus == SHOW) {
-                    mStatus = HIDE_ANIM;
-                    mPathBtn.startAnimation(mRotateAnimHide);
-                    stopViewGroupAnimClose();
-                }
-            }
-        });
         getViewTreeObserver().addOnGlobalLayoutListener(new ViewTreeObserver.OnGlobalLayoutListener() {
             @Override
             public void onGlobalLayout() {
                 getViewTreeObserver().removeOnGlobalLayoutListener(this);
                 mCenterX = (int) (mPathBtn.getX() + mPathBtn.getWidth() / 2);
                 mCenterY = (int) (mPathBtn.getY() + mPathBtn.getHeight() / 2);
-                mMaxRadius = mCenterY;
                 mCurrentRadius = Math.min(mPathBtn.getWidth() / 2, mPathBtn.getHeight() / 2);
+                calculateMaxRadius();
             }
         });
         setWillNotDraw(false);
@@ -162,12 +151,86 @@ public class PathGroup extends RelativeLayout {
 
             }
         });
+        initPathBtn();
+    }
+
+    private void initPathBtn() {
+        mPathBtn.setOnClickListener(new OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                if (!mIsLongClick) {
+                    if (mStatus == HIDE) {
+                        mStatus = SHOW_ANIM;
+                        mPathBtn.startAnimation(mRotateAnimShow);
+                        startViewGroupAnimOpen();
+                    } else if (mStatus == SHOW) {
+                        mStatus = HIDE_ANIM;
+                        mPathBtn.startAnimation(mRotateAnimHide);
+                        stopViewGroupAnimClose();
+                    }
+                } else {
+                    mIsLongClick = false;
+                }
+            }
+        });
+
+        mPathBtn.setOnLongClickListener(new OnLongClickListener() {
+            @Override
+            public boolean onLongClick(View v) {
+                mIsLongClick = true;
+                return false;
+            }
+        });
     }
 
     @Override
     protected void onDraw(Canvas canvas) {
         super.onDraw(canvas);
         canvas.drawCircle(mCenterX, mCenterY, mCurrentRadius, mPaint);
+    }
+    float lastX, lastY;
+
+    @Override
+    public boolean dispatchTouchEvent(MotionEvent ev) {
+        switch (ev.getAction()) {
+            case MotionEvent.ACTION_DOWN:
+                mIsLongClick = false;
+                break;
+            case MotionEvent.ACTION_MOVE:
+                if (mIsLongClick) {
+                    int dx = (int) (ev.getX() - lastX);
+                    int dy = (int) (ev.getY() - lastY);
+                    LayoutParams lp = (LayoutParams) mPathBtn.getLayoutParams();
+                    lp.rightMargin -= dx;
+                    lp.bottomMargin -= dy;
+                    if (lp.bottomMargin > getHeight() - mPathBtn.getHeight()) {
+                        lp.bottomMargin = getHeight() - mPathBtn.getHeight();
+                    }
+                    if (lp.bottomMargin < 0) {
+                        lp.bottomMargin =  0;
+                    }
+                    if (lp.rightMargin < 0) {
+                        lp.rightMargin = 0;
+                    }
+                    if (lp.leftMargin > getWidth() - mPathBtn.getHeight()) {
+                        lp.leftMargin = getWidth() - mPathBtn.getWidth();
+                    }
+                    mCenterX = getWidth() - lp.rightMargin - mPathBtn.getWidth() / 2;
+                    mCenterY = getHeight() - lp.bottomMargin - mPathBtn.getHeight() / 2;
+                    invalidate();
+                    mPathBtn.setLayoutParams(lp);
+
+                }
+                break;
+            case MotionEvent.ACTION_UP:
+                if (mIsLongClick) {
+                    calculateMaxRadius();
+                }
+                break;
+        }
+        lastX = ev.getX();
+        lastY = ev.getY();
+        return super.dispatchTouchEvent(ev);
     }
 
     private void startViewGroupAnimOpen() {
@@ -191,6 +254,13 @@ public class PathGroup extends RelativeLayout {
             view.startAnimation(mScaleAnimHide);
         }
         new AnimThread().start();
+    }
+
+    private void calculateMaxRadius() {
+
+        int maxX = (int) Math.max(getWidth() - mPathBtn.getX(), mPathBtn.getX());
+        int maxY = (int) Math.max(getHeight() - mPathBtn.getY(), mPathBtn.getY());
+        mMaxRadius = Math.max(maxX, maxY) + mCurrentRadius;
     }
 
     public void setAdapter(BaseAdapter adapter) {
@@ -244,4 +314,6 @@ public class PathGroup extends RelativeLayout {
     public interface OnItemClickListener {
         public void onItemClick(int index);
     }
+
+
 }
