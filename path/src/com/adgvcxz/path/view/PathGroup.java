@@ -226,8 +226,8 @@ public class PathGroup extends RelativeLayout {
                     if (lp.rightMargin < 0) {
                         lp.rightMargin = 0;
                     }
-                    if (lp.leftMargin > getWidth() - mPathBtn.getHeight()) {
-                        lp.leftMargin = getWidth() - mPathBtn.getWidth();
+                    if (lp.rightMargin > getWidth() - mPathBtn.getHeight()) {
+                        lp.rightMargin = getWidth() - mPathBtn.getWidth();
                     }
                     mCenterX = getWidth() - lp.rightMargin - mPathBtn.getWidth() / 2;
                     mCenterY = getHeight() - lp.bottomMargin - mPathBtn.getHeight() / 2;
@@ -272,11 +272,22 @@ public class PathGroup extends RelativeLayout {
         new AnimThread().start();
     }
 
-    private void calculateMaxRadius() {
+    private int calculateDistance(int x, int y, int dstX, int dstY) {
+        return (int) Math.sqrt((x - dstX) * (x - dstX) + (y - dstY) * (y - dstY));
+    }
 
-        int maxX = (int) Math.max(getWidth() - mPathBtn.getX(), mPathBtn.getX());
-        int maxY = (int) Math.max(getHeight() - mPathBtn.getY(), mPathBtn.getY());
-        mMaxRadius = Math.max(maxX, maxY) + mCurrentRadius;
+    /**
+     * 计算和四个角的距离最大值
+     */
+    private void calculateMaxRadius() {
+        int x = (int) mPathBtn.getX();
+        int y = (int) mPathBtn.getY();
+        int radius1 = calculateDistance(x, y, 0, 0);
+        int radius2 = calculateDistance(x, y, getWidth(), 0);
+        int radius3 = calculateDistance(x, y, 0, getHeight());
+        int radius4 = calculateDistance(x, y, getWidth(), getHeight());
+        int result = Math.max(radius1, Math.max(radius2, Math.max(radius3, radius4)));
+        mMaxRadius = result + mCurrentRadius + 10;
     }
 
     public void setAdapter(BaseAdapter adapter) {
