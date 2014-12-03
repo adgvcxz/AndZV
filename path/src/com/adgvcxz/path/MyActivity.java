@@ -29,10 +29,15 @@ public class MyActivity extends Activity {
                 return pathGroup.getIsShow();
             }
         });
-        pathGroup.setOnItemClickListener(new PathGroup.OnItemClickListener() {
+        pathGroup.setOnPathGroupListener(new PathGroup.OnPathGroupListener() {
             @Override
             public void onItemClick(int index) {
                 Toast.makeText(MyActivity.this, ADAPTER[index], Toast.LENGTH_SHORT).show();
+            }
+
+            @Override
+            public void onPathHide(int index) {
+
             }
         });
     }

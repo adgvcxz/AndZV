@@ -1,10 +1,14 @@
 package com.adgvcxz.path.view;
 
+import android.animation.AnimatorSet;
+import android.animation.ObjectAnimator;
+import android.annotation.TargetApi;
 import android.content.Context;
 import android.content.res.TypedArray;
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
+import android.os.Build;
 import android.os.Handler;
 import android.os.Message;
 import android.os.Vibrator;
@@ -13,9 +17,7 @@ import android.view.Gravity;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewTreeObserver;
-import android.view.animation.Animation;
-import android.view.animation.AnimationUtils;
-import android.view.animation.LayoutAnimationController;
+import android.view.animation.*;
 import android.widget.*;
 import com.adgvcxz.path.R;
 
@@ -38,9 +40,9 @@ public class PathGroup extends RelativeLayout {
 
     private int mDragColor;
 
-    private int mMaxRadius;
+    private int mMaxRadius, mMinRadius;
 
-    private ImageView mPathBtn;
+    private PathImage mPathBtn;
 
     private int mCenterX, mCenterY;
 
@@ -54,8 +56,6 @@ public class PathGroup extends RelativeLayout {
 
     private int mCurrentRadius;
 
-    private int mPerRadius;
-
     private int mStatus;
 
     private GridView mGridView;
@@ -64,11 +64,19 @@ public class PathGroup extends RelativeLayout {
 
     private int mRightMargin, mBottomMargin;
 
-    private OnItemClickListener mListener;
+    private OnPathGroupListener mListener;
 
     private boolean mIsLongClick;
 
     private boolean mIsCanDrag;
+
+    private boolean mItemClick;
+
+    private CircleAnim mCircleAnim;
+
+    private boolean mShowBackCircle;
+
+    private int mIndex;
 
     public PathGroup(Context context) {
         super(context);
@@ -92,6 +100,7 @@ public class PathGroup extends RelativeLayout {
 
     private void init() {
         mStatus = HIDE;
+        mShowBackCircle = false;
         float density = getResources().getDisplayMetrics().density;
         mNumber = 3;
         mBottomMargin = (int) (40 * density);
@@ -100,6 +109,9 @@ public class PathGroup extends RelativeLayout {
         mHideColor = Color.parseColor("#999AFF9A");
         mDragColor = Color.parseColor("#990080FF");
         mIsCanDrag = true;
+        mCircleAnim = new CircleAnim();
+        mCircleAnim.setInterpolator(new AccelerateInterpolator());
+        mCircleAnim.setDuration(200);
     }
 
     private void initView() {
@@ -111,29 +123,35 @@ public class PathGroup extends RelativeLayout {
         LayoutParams gridViewLP = new LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.WRAP_CONTENT);
         gridViewLP.addRule(RelativeLayout.CENTER_IN_PARENT);
         addView(mGridView, gridViewLP);
-        mPathBtn = new ImageView(getContext());
-        mPathBtn.setBackgroundResource(R.drawable.plus);
+        mPathBtn = new PathImage(getContext());
+        mPathBtn.setShow(true);
+        mPathBtn.setImageResource(R.drawable.plus);
         LayoutParams btnLp = new LayoutParams(LayoutParams.WRAP_CONTENT, LayoutParams.WRAP_CONTENT);
         btnLp.addRule(RelativeLayout.ALIGN_PARENT_BOTTOM);
         btnLp.addRule(RelativeLayout.ALIGN_PARENT_RIGHT);
-        btnLp.bottomMargin = mBottomMargin;
-        btnLp.rightMargin = mRightMargin;
         addView(mPathBtn, btnLp);
         mGridView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
             @Override
             public void onItemClick(AdapterView<?> adapterView, View view, int i, long l) {
                 if (mListener != null) {
+                    mIndex = i;
                     mListener.onItemClick(i);
                 }
             }
         });
         getViewTreeObserver().addOnGlobalLayoutListener(new ViewTreeObserver.OnGlobalLayoutListener() {
+            @TargetApi(Build.VERSION_CODES.JELLY_BEAN)
             @Override
             public void onGlobalLayout() {
-                getViewTreeObserver().removeOnGlobalLayoutListener(this);
+                if (Build.VERSION.SDK_INT > 16) {
+                    getViewTreeObserver().removeOnGlobalLayoutListener(this);
+                } else {
+                    getViewTreeObserver().removeGlobalOnLayoutListener(this);
+                }
                 mCenterX = (int) (mPathBtn.getX() + mPathBtn.getWidth() / 2);
                 mCenterY = (int) (mPathBtn.getY() + mPathBtn.getHeight() / 2);
                 mCurrentRadius = Math.min(mPathBtn.getWidth() / 2, mPathBtn.getHeight() / 2);
+                mMinRadius = mCurrentRadius;
                 calculateMaxRadius();
             }
         });
@@ -177,6 +195,7 @@ public class PathGroup extends RelativeLayout {
                         mPathBtn.startAnimation(mRotateAnimHide);
                         stopViewGroupAnimClose();
                     }
+                    mItemClick = false;
                 } else {
                     mIsLongClick = false;
                 }
@@ -191,7 +210,9 @@ public class PathGroup extends RelativeLayout {
                     Vibrator vib = (Vibrator) getContext().getSystemService(Context.VIBRATOR_SERVICE);
                     vib.vibrate(100);
                     mPaint.setColor(mDragColor);
+                    mPathBtn.invalidate();
                 }
+                mItemClick = false;
                 return false;
             }
         });
@@ -200,8 +221,11 @@ public class PathGroup extends RelativeLayout {
     @Override
     protected void onDraw(Canvas canvas) {
         super.onDraw(canvas);
-        canvas.drawCircle(mCenterX, mCenterY, mCurrentRadius, mPaint);
+        if (mShowBackCircle) {
+            canvas.drawCircle(mCenterX, mCenterY, mCurrentRadius, mPaint);
+        }
     }
+
     float lastX, lastY;
 
     @Override
@@ -221,7 +245,7 @@ public class PathGroup extends RelativeLayout {
                         lp.bottomMargin = getHeight() - mPathBtn.getHeight();
                     }
                     if (lp.bottomMargin < 0) {
-                        lp.bottomMargin =  0;
+                        lp.bottomMargin = 0;
                     }
                     if (lp.rightMargin < 0) {
                         lp.rightMargin = 0;
@@ -239,6 +263,7 @@ public class PathGroup extends RelativeLayout {
             case MotionEvent.ACTION_UP:
                 if (mIsLongClick) {
                     mPaint.setColor(mHideColor);
+                    mPathBtn.invalidate();
                     calculateMaxRadius();
                     invalidate();
                 }
@@ -249,13 +274,23 @@ public class PathGroup extends RelativeLayout {
         return super.dispatchTouchEvent(ev);
     }
 
+    public void clickItem(int index) {
+        mItemClick = true;
+        close();
+    }
+
+    public void close() {
+        mStatus = HIDE_ANIM;
+        mPathBtn.startAnimation(mRotateAnimHide);
+        stopViewGroupAnimClose();
+    }
+
     private void startViewGroupAnimOpen() {
-        mPerRadius = mMaxRadius / 50;
         mGridView.setVisibility(View.VISIBLE);
         LayoutAnimationController controller = new LayoutAnimationController(mScaleAnimShow, 0.2f);
         controller.setOrder(LayoutAnimationController.ORDER_REVERSE);
         mGridView.setLayoutAnimation(controller);
-        new AnimThread().start();
+        startAnimation(mCircleAnim);
     }
 
     public boolean getIsShow() {
@@ -263,13 +298,12 @@ public class PathGroup extends RelativeLayout {
     }
 
     private void stopViewGroupAnimClose() {
-        mPerRadius = -mMaxRadius / 50;
         int count = mGridView.getChildCount();
         for (int i = 0; i < count; i++) {
             View view = mGridView.getChildAt(i);
             view.startAnimation(mScaleAnimHide);
         }
-        new AnimThread().start();
+        startAnimation(mCircleAnim);
     }
 
     private int calculateDistance(int x, int y, int dstX, int dstY) {
@@ -287,60 +321,135 @@ public class PathGroup extends RelativeLayout {
         int radius3 = calculateDistance(x, y, 0, getHeight());
         int radius4 = calculateDistance(x, y, getWidth(), getHeight());
         int result = Math.max(radius1, Math.max(radius2, Math.max(radius3, radius4)));
-        mMaxRadius = result + mCurrentRadius + 10;
+        mMaxRadius = result + mCurrentRadius + mPathBtn.getWidth();
     }
 
     public void setAdapter(BaseAdapter adapter) {
         mGridView.setAdapter(adapter);
     }
 
-    private Handler mHandler = new Handler() {
-        @Override
-        public void handleMessage(Message msg) {
-            super.handleMessage(msg);
-            invalidate();
-        }
-    };
 
+    public void showPathBtn() {
+        ObjectAnimator animatorScaleX = ObjectAnimator.ofFloat(mPathBtn, "scaleX", 0f, 1f);
+        ObjectAnimator animatorScaleY = ObjectAnimator.ofFloat(mPathBtn, "scaleY", 0f, 1f);
+        ObjectAnimator animatorRotation = ObjectAnimator.ofFloat(mPathBtn, "rotation", 0f, 720f);
+        AnimatorSet animationSet = new AnimatorSet();
+        animationSet.setDuration(400);
+        animationSet.playTogether(animatorScaleX, animatorScaleY, animatorRotation);
+        animationSet.setInterpolator(new AnticipateOvershootInterpolator());
+        animationSet.start();
+    }
 
-    class AnimThread extends Thread {
-        @Override
-        public void run() {
-            super.run();
-            for (int i = 0; i < 60; i++) {
-                mCurrentRadius += mPerRadius;
-                if (i == 30) {
-                    if (mStatus == HIDE_ANIM) {
-                        mPaint.setColor(mHideColor);
-                    } else if (mStatus == SHOW_ANIM) {
-                        mPaint.setColor(mShowColor);
-                    }
-                }
-                mHandler.sendEmptyMessage(0);
-                try {
-                    Thread.sleep(2);
-                } catch (InterruptedException e) {
-                    e.printStackTrace();
-                }
-            }
-            if (mPerRadius > 0) {
-                mStatus = SHOW;
-                mPaint.setColor(mShowColor);
-            } else {
-                mStatus = HIDE;
-                mPaint.setColor(mHideColor);
-            }
-            mHandler.sendEmptyMessage(0);
+    public void hidePathBtn() {
+        ObjectAnimator animatorScaleX = ObjectAnimator.ofFloat(mPathBtn, "scaleX", 1f, 0f);
+        ObjectAnimator animatorScaleY = ObjectAnimator.ofFloat(mPathBtn, "scaleY", 1f, 0f);
+        ObjectAnimator animatorRotation = ObjectAnimator.ofFloat(mPathBtn, "rotation", 720f, 0f);
+        AnimatorSet animationSet = new AnimatorSet();
+        animationSet.setDuration(400);
+        animationSet.playTogether(animatorScaleX, animatorScaleY, animatorRotation);
+        animationSet.setInterpolator(new AnticipateInterpolator());
+        animationSet.start();
+    }
+
+    @Override
+    protected void onSizeChanged(int w, int h, int oldw, int oldh) {
+        super.onSizeChanged(w, h, oldw, oldh);
+        if (oldh < h) {
+            showPathBtn();
+        } else {
+            hidePathBtn();
         }
     }
 
-    public void setOnItemClickListener(OnItemClickListener listener) {
+    class CircleAnim extends Animation {
+
+        public CircleAnim() {
+            setAnimationListener(new AnimationListener() {
+                @Override
+                public void onAnimationStart(Animation animation) {
+                    mShowBackCircle = true;
+                }
+
+                @Override
+                public void onAnimationEnd(Animation animation) {
+                    if (mStatus == SHOW_ANIM) {
+                        mStatus = SHOW;
+                        mPaint.setColor(mShowColor);
+                        mPathBtn.invalidate();
+                    } else {
+                        mShowBackCircle = false;
+                        mStatus = HIDE;
+                        mPaint.setColor(mHideColor);
+                        mPathBtn.invalidate();
+                        if (mListener != null && mItemClick) {
+                            mListener.onPathHide(mIndex);
+                        }
+                    }
+                }
+
+                @Override
+                public void onAnimationRepeat(Animation animation) {
+
+                }
+            });
+        }
+
+        @Override
+        protected void applyTransformation(float interpolatedTime, Transformation t) {
+            switch (mStatus) {
+                case HIDE_ANIM:
+                    if (interpolatedTime > 0.5) {
+                        mPaint.setColor(mHideColor);
+                        mPathBtn.setShow(true);
+                        mPathBtn.invalidate();
+                    }
+                    mCurrentRadius = (int) (mMaxRadius - (mMaxRadius - mMinRadius) * interpolatedTime);
+                    break;
+                case SHOW_ANIM:
+                    if (interpolatedTime > 0.5) {
+                        mPaint.setColor(mShowColor);
+                        mPathBtn.setShow(false);
+                        mPathBtn.invalidate();
+                    }
+                    mCurrentRadius = (int) (mMinRadius + (mMaxRadius - mMinRadius) * interpolatedTime);
+                    break;
+            }
+            invalidate();
+        }
+    }
+
+    public void setOnPathGroupListener(OnPathGroupListener listener) {
         mListener = listener;
     }
 
-    public interface OnItemClickListener {
+    public interface OnPathGroupListener {
         public void onItemClick(int index);
+
+        public void onPathHide(int index);
     }
 
+
+    class PathImage extends ImageView {
+
+        private boolean showBtn;
+
+
+        public PathImage(Context context) {
+            super(context);
+        }
+
+        @Override
+        protected void onDraw(Canvas canvas) {
+            if (showBtn) {
+                canvas.drawCircle(getWidth() / 2, getHeight() / 2, getHeight() / 2, mPaint);
+            }
+            super.onDraw(canvas);
+        }
+
+        public void setShow(boolean s) {
+            showBtn = s;
+        }
+
+    }
 
 }
