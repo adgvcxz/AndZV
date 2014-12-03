@@ -3,6 +3,7 @@ AndZV
 
 仿照path菜单栏  android path
 
+![](https://github.com/adgvcxz/AndZV/blob/master/path/path.gif)
 
 ```xml
 <com.adgvcxz.path.view.PathGroup
