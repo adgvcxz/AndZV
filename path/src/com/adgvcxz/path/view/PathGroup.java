@@ -89,8 +89,8 @@ public class PathGroup extends RelativeLayout {
         init();
         TypedArray array = context.obtainStyledAttributes(attrs, R.styleable.PathGroup);
         mNumber = array.getInteger(R.styleable.PathGroup_numColumns, 3);
-        mBottomMargin = array.getDimensionPixelSize(R.styleable.PathGroup_btnBottomMargin, mNumber);
-        mRightMargin = array.getDimensionPixelSize(R.styleable.PathGroup_btnRightMargin, mBottomMargin);
+        mBottomMargin = array.getDimensionPixelSize(R.styleable.PathGroup_btnBottomMargin, mBottomMargin);
+        mRightMargin = array.getDimensionPixelSize(R.styleable.PathGroup_btnRightMargin, mRightMargin);
         mShowColor = array.getColor(R.styleable.PathGroup_showColor, mShowColor);
         mHideColor = array.getColor(R.styleable.PathGroup_hideColor, mHideColor);
         mIsCanDrag = array.getBoolean(R.styleable.PathGroup_canMove, mIsCanDrag);
@@ -129,6 +129,8 @@ public class PathGroup extends RelativeLayout {
         LayoutParams btnLp = new LayoutParams(LayoutParams.WRAP_CONTENT, LayoutParams.WRAP_CONTENT);
         btnLp.addRule(RelativeLayout.ALIGN_PARENT_BOTTOM);
         btnLp.addRule(RelativeLayout.ALIGN_PARENT_RIGHT);
+        btnLp.bottomMargin = mBottomMargin;
+        btnLp.rightMargin = mRightMargin;
         addView(mPathBtn, btnLp);
         mGridView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
             @Override
